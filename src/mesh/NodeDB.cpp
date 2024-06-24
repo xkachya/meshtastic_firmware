@@ -374,6 +374,12 @@ void NodeDB::installDefaultModuleConfig()
     moduleConfig.ambient_lighting.green = (myNodeInfo.my_node_num & 0x00FF00) >> 8;
     moduleConfig.ambient_lighting.blue = myNodeInfo.my_node_num & 0x0000FF;
 
+    moduleConfig.has_dzhaga = true;
+    moduleConfig.dzhaga.enabled = false;
+    moduleConfig.dzhaga.ready_btn_pin = 2;
+    moduleConfig.dzhaga.frbtn_pin_1 = 13;
+    moduleConfig.dzhaga.frbtn_triggered_high = true;
+
     initModuleConfigIntervals();
 }
 
@@ -750,7 +756,8 @@ void NodeDB::saveToDisk(int saveWhat)
         moduleConfig.has_ambient_lighting = true;
         moduleConfig.has_audio = true;
         moduleConfig.has_paxcounter = true;
-
+        moduleConfig.has_dzhaga = true;
+        
         saveProto(moduleConfigFileName, meshtastic_LocalModuleConfig_size, &meshtastic_LocalModuleConfig_msg, &moduleConfig);
     }
 

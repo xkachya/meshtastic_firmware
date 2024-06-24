@@ -539,6 +539,11 @@ void AdminModule::handleSetModuleConfig(const meshtastic_ModuleConfig &c)
         moduleConfig.has_paxcounter = true;
         moduleConfig.paxcounter = c.payload_variant.paxcounter;
         break;
+    case meshtastic_ModuleConfig_dzhaga_tag:
+        LOG_INFO("Setting module config: DzhagaC\n");
+        moduleConfig.has_dzhaga = true;
+        moduleConfig.dzhaga = c.payload_variant.dzhaga;
+        break;
     }
 
     saveChanges(SEGMENT_MODULECONFIG);
@@ -693,6 +698,11 @@ void AdminModule::handleGetModuleConfig(const meshtastic_MeshPacket &req, const 
             LOG_INFO("Getting module config: Paxcounter\n");
             res.get_module_config_response.which_payload_variant = meshtastic_ModuleConfig_paxcounter_tag;
             res.get_module_config_response.payload_variant.paxcounter = moduleConfig.paxcounter;
+            break;
+        case meshtastic_AdminMessage_ModuleConfigType_DZHAGA_CONFIG:
+            LOG_INFO("Getting module config: Dzhaga\n");
+            res.get_module_config_response.which_payload_variant = meshtastic_ModuleConfig_dzhaga_tag;
+            res.get_module_config_response.payload_variant.dzhaga = moduleConfig.dzhaga;
             break;
         }
 
