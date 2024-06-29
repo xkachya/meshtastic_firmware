@@ -34,7 +34,7 @@ class DzhagaModule : public SinglePortModule, private concurrency::OSThread
     /** For reply module we do all of our processing in the (normally optional)
      * want_replies handling
      */
-    virtual meshtastic_MeshPacket *allocReply() override;
+    //virtual meshtastic_MeshPacket *allocReply() override;
 };
 
 extern DzhagaModule *dzhagaModule;

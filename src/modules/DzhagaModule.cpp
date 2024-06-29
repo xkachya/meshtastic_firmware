@@ -34,7 +34,7 @@ int32_t DzhagaModule::runOnce()
         Uncomment the preferences below if you want to use the module
         without having to configure it from the PythonAPI or WebUI.
     */
-    moduleConfig.dzhaga.enabled = false;
+    // moduleConfig.dzhaga.enabled = false;
     // moduleConfig.dzhaga.mode = meshtastic_ModuleConfig_DzhagaConfig_Dzhaga_Mode_REMOTE;
     // moduleConfig.dzhaga.mode = meshtastic_ModuleConfig_DzhagaConfig_Dzhaga_Mode_TARGET;
     // moduleConfig.dzhaga.ready_btn_pin = 2; // 
@@ -46,35 +46,55 @@ int32_t DzhagaModule::runOnce()
     // strcpy(moduleConfig.dzhaga.remote_node, "Motion");
     // moduleConfig.dzhaga.remote_node_num = 2;
 
+    LOG_DEBUG("Inside runOnce() function\n");
+    LOG_DEBUG("Module enabled: %d\n", moduleConfig.dzhaga.enabled);
+    LOG_DEBUG("Module mode: %d\n", moduleConfig.dzhaga.mode);
+
     if (!moduleConfig.dzhaga.enabled || 
          moduleConfig.dzhaga.mode == meshtastic_ModuleConfig_DzhagaConfig_Dzhaga_Mode_NONE)
         return disable();
 
-    remoteNodeNumber = moduleConfig.dzhaga.remote_node_num;
+    //remoteNodeNumber = moduleConfig.dzhaga.remote_node_num;
+    remoteNodeNumber = nodeDB->getNodeNum();
+    LOG_DEBUG("Remote node number: %x\n", remoteNodeNumber);
 
     if (moduleConfig.dzhaga.mode == meshtastic_ModuleConfig_DzhagaConfig_Dzhaga_Mode_REMOTE) {
+        LOG_DEBUG("Configuring pins for remote mode\n");
+        LOG_DEBUG("The firstTimer: %x\n", firstTime);
+        LOG_DEBUG("frbtn_use_pullup value: %d\n", moduleConfig.dzhaga.frbtn_use_pullup);
+        
         if (firstTime) {
             firstTime = false;
+            uint8_t pullup_down_mode = moduleConfig.dzhaga.frbtn_triggered_high ? INPUT_PULLDOWN : INPUT_PULLUP;
+            uint8_t pin_mode = moduleConfig.dzhaga.frbtn_use_pullup ? pullup_down_mode : INPUT;
+            LOG_DEBUG("PULL UP/DOWN mode: %d\n", pullup_down_mode);
+            LOG_DEBUG("Pin mode: %d\n", pin_mode);            
+
             if (moduleConfig.dzhaga.ready_btn_pin > 0) {
-                pinMode(moduleConfig.dzhaga.ready_btn_pin, moduleConfig.dzhaga.frbtn_use_pullup ? INPUT_PULLUP : INPUT);
+                pinMode(moduleConfig.dzhaga.ready_btn_pin, pin_mode);
+                LOG_DEBUG("Pin ready_btn_pin set to %d\n", pin_mode);
             } 
             if (moduleConfig.dzhaga.frbtn_pin_1 > 0) {
-                pinMode(moduleConfig.dzhaga.frbtn_pin_1, moduleConfig.dzhaga.frbtn_use_pullup ? INPUT_PULLUP : INPUT);
+                pinMode(moduleConfig.dzhaga.frbtn_pin_1, pin_mode);
             } 
             if (moduleConfig.dzhaga.frbtn_pin_2 > 0) {
-                pinMode(moduleConfig.dzhaga.frbtn_pin_2, moduleConfig.dzhaga.frbtn_use_pullup ? INPUT_PULLUP : INPUT);
+                pinMode(moduleConfig.dzhaga.frbtn_pin_2, pin_mode);
             }
             if (moduleConfig.dzhaga.frbtn_pin_3 > 0) {
-                pinMode(moduleConfig.dzhaga.frbtn_pin_3, moduleConfig.dzhaga.frbtn_use_pullup ? INPUT_PULLUP : INPUT);
+                pinMode(moduleConfig.dzhaga.frbtn_pin_3, pin_mode);
             } 
             if (moduleConfig.dzhaga.ready_btn_pin <= 0 || moduleConfig.dzhaga.frbtn_pin_1 <= 0 || moduleConfig.dzhaga.frbtn_pin_2 <= 0 || moduleConfig.dzhaga.frbtn_pin_3 <= 0) {
                 LOG_WARN("Dzhaga Module: Set to enabled but not one button pins are set. Disabling module...\n");
                 return disable();
             }
             LOG_INFO("Dzhaga Module: Initializing\n");
+            LOG_DEBUG("Current pins state: A=%i, B=%i, C=%i, D=%i\n", digitalRead(moduleConfig.dzhaga.ready_btn_pin), digitalRead(moduleConfig.dzhaga.frbtn_pin_1), digitalRead(moduleConfig.dzhaga.frbtn_pin_2), digitalRead(moduleConfig.dzhaga.frbtn_pin_3));
 
             return DELAYED_INTERVAL;
         }
+
+        LOG_DEBUG("Remote mode: part 2\n");
+        LOG_DEBUG("Current pins state: A=%i, B=%i, C=%i, D=%i\n", digitalRead(moduleConfig.dzhaga.ready_btn_pin), digitalRead(moduleConfig.dzhaga.frbtn_pin_1), digitalRead(moduleConfig.dzhaga.frbtn_pin_2), digitalRead(moduleConfig.dzhaga.frbtn_pin_3));
 
         if ((millis() - lastSentToMesh) >= Default::getConfiguredOrDefaultMs(minimum_broadcast_secs) &&
             hasDetectionEvent()) {
@@ -118,7 +138,7 @@ void DzhagaModule::sendDetectionMessage()
         return;                                                         // Early return on allocation failure
     }
 
-    p->want_ack = true;
+    p->want_ack = false;
     p->to = remoteNodeNumber;
     p->decoded.payload.size = strlen(message);
     memcpy(p->decoded.payload.bytes, message, p->decoded.payload.size);
@@ -131,7 +151,7 @@ void DzhagaModule::sendDetectionMessage()
 
     LOG_INFO("Sending message id=%d, dest=%x, msg=%.*s\n", p->id, p->to, p->decoded.payload.size, p->decoded.payload.bytes);
     lastSentToMesh = millis();
-    service.sendToMesh(p);
+    //service.sendToMesh(p);
     delete[] message;    
 }
 
@@ -156,14 +176,14 @@ void DzhagaModule::sendCurrentStateMessage()
         return;                                                         // Early return on allocation failure
     }
 
-    p->want_ack = true;
+    p->want_ack = false;
     p->to = remoteNodeNumber;
     p->decoded.payload.size = strlen(message);
     memcpy(p->decoded.payload.bytes, message, p->decoded.payload.size);
 
     LOG_INFO("Sending message id=%d, dest=%x, msg=%.*s\n", p->id, p->to, p->decoded.payload.size, p->decoded.payload.bytes);
     lastSentToMesh = millis();
-    service.sendToMesh(p);
+    //service.sendToMesh(p);
     delete[] message;
 }
 
@@ -211,7 +231,7 @@ meshtastic_NodeInfoLite *DzhagaModule::getMeshNode(NodeNum n)
     return NULL;
 }
 */
-
+/*
 meshtastic_MeshPacket *DzhagaModule::allocReply()
 {
     assert(currentRequest); // should always be !NULL
@@ -231,3 +251,4 @@ meshtastic_MeshPacket *DzhagaModule::allocReply()
 
     return reply;
 }
+*/
