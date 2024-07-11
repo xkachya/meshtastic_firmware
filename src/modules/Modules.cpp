@@ -17,6 +17,9 @@
 #if !MESHTASTIC_EXCLUDE_DETECTIONSENSOR
 #include "modules/DetectionSensorModule.h"
 #endif
+#if !MESHTASTIC_EXCLUDE_DZHAGA
+#include "modules/DzhagaModule.h"
+#endif
 #if !MESHTASTIC_EXCLUDE_NEIGHBORINFO
 #include "modules/NeighborInfoModule.h"
 #endif
@@ -105,6 +108,9 @@ void setupModules()
 #endif
 #if !MESHTASTIC_EXCLUDE_DETECTIONSENSOR
         detectionSensorModule = new DetectionSensorModule();
+#endif
+#if !MESHTASTIC_EXCLUDE_DZHAGA
+        dzhagaModule = new DzhagaModule();
 #endif
 #if !MESHTASTIC_EXCLUDE_ATAK
         atakPluginModule = new AtakPluginModule();
