@@ -377,7 +377,7 @@ void NodeDB::installDefaultModuleConfig()
 
     moduleConfig.has_dzhaga = true;
     moduleConfig.dzhaga.enabled = false;
-    moduleConfig.dzhaga.ready_btn_pin = 2;
+    moduleConfig.dzhaga.frbtn_pin_0 = 2;
     moduleConfig.dzhaga.frbtn_pin_1 = 13;
     moduleConfig.dzhaga.frbtn_triggered_high = true;
 

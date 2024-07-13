@@ -86,7 +86,7 @@ int32_t DzhagaModule::runOnce()
     // determine when to start and end the active phase, transitioning the device between active and sleep 
     // modes as part of its power management strategy.
     if (!isReadyOne && 
-        moduleConfig.dzhaga.power_control_enabled &&
+        moduleConfig.dzhaga.power_saving_enabled &&
         moduleConfig.dzhaga.power_sleep_secs > 0 &&
         moduleConfig.dzhaga.power_active_secs > 0 &&
         moduleConfig.dzhaga.mode == meshtastic_ModuleConfig_DzhagaConfig_Dzhaga_Mode_TARGET &&
@@ -189,9 +189,9 @@ int32_t DzhagaModule::runOnce()
             LOG_DEBUG("[DZHAGA]: PULL UP/DOWN mode: %d\n", pullup_down_mode);
             LOG_DEBUG("[DZHAGA]: Pin mode: %d\n", pin_mode);            
 
-            if (moduleConfig.dzhaga.ready_btn_pin > 0) {
-                pinMode(moduleConfig.dzhaga.ready_btn_pin, pin_mode);
-                LOG_DEBUG("[DZHAGA]: Pin ready_btn_pin set to %d\n", pin_mode);
+            if (moduleConfig.dzhaga.frbtn_pin_0 > 0) {
+                pinMode(moduleConfig.dzhaga.frbtn_pin_0, pin_mode);
+                LOG_DEBUG("[DZHAGA]: Pin frbtn_pin_0 set to %d\n", pin_mode);
             } 
             if (moduleConfig.dzhaga.frbtn_pin_1 > 0) {
                 pinMode(moduleConfig.dzhaga.frbtn_pin_1, pin_mode);
@@ -205,7 +205,7 @@ int32_t DzhagaModule::runOnce()
             if (moduleConfig.dzhaga.ready_one_pin > 0) {
                 pinMode(moduleConfig.dzhaga.ready_one_pin, pin_mode);
             } 
-            if (moduleConfig.dzhaga.ready_btn_pin <= 0 || 
+            if (moduleConfig.dzhaga.frbtn_pin_0 <= 0 || 
                 moduleConfig.dzhaga.frbtn_pin_1 <= 0 || 
                 moduleConfig.dzhaga.frbtn_pin_2 <= 0 || 
                 moduleConfig.dzhaga.frbtn_pin_3 <= 0 || 
@@ -257,7 +257,7 @@ int32_t DzhagaModule::runOnce()
         else if (moduleConfig.dzhaga.state_broadcast_secs > 0 &&
                  (millis() - lastSentToMesh) >= Default::getConfiguredOrDefaultMs(moduleConfig.dzhaga.state_broadcast_secs)) {
             // визначити правило щоб відправляти повідомлення
-            //if (pairPresent) sendCurrentStateMessage();
+            if (pairPresent) sendCurrentStateMessage();
             return DELAYED_INTERVAL;
         }
     } else if (moduleConfig.dzhaga.mode == meshtastic_ModuleConfig_DzhagaConfig_Dzhaga_Mode_TARGET) {
@@ -275,8 +275,8 @@ int32_t DzhagaModule::runOnce()
                 digitalWrite(moduleConfig.dzhaga.ready_one_led_pin, 0 ^ LED_INVERTED); // turn off the LED
             }
 
-            if (moduleConfig.dzhaga.ready_btn_pin > 0) {
-                pinMode(moduleConfig.dzhaga.ready_btn_pin, OUTPUT);
+            if (moduleConfig.dzhaga.frbtn_pin_0 > 0) {
+                pinMode(moduleConfig.dzhaga.frbtn_pin_0, OUTPUT);
             } 
             if (moduleConfig.dzhaga.frbtn_pin_1 > 0) {
                 pinMode(moduleConfig.dzhaga.frbtn_pin_1, OUTPUT);
@@ -287,14 +287,14 @@ int32_t DzhagaModule::runOnce()
             if (moduleConfig.dzhaga.frbtn_pin_3 > 0) {
                 pinMode(moduleConfig.dzhaga.frbtn_pin_3, OUTPUT);
             } 
-            if (moduleConfig.dzhaga.ready_btn_pin <= 0 || moduleConfig.dzhaga.frbtn_pin_1 <= 0 || moduleConfig.dzhaga.frbtn_pin_2 <= 0 || moduleConfig.dzhaga.frbtn_pin_3 <= 0) {
+            if (moduleConfig.dzhaga.frbtn_pin_0 <= 0 || moduleConfig.dzhaga.frbtn_pin_1 <= 0 || moduleConfig.dzhaga.frbtn_pin_2 <= 0 || moduleConfig.dzhaga.frbtn_pin_3 <= 0) {
                 LOG_WARN("[DZHAGA]: Set to enabled but not one button pins are set. Disabling module...\n");
                 return disable();
             }
 
             LOG_DEBUG("[DZHAGA]: Local node number: %d || %x\n", nodeDB->getNodeNum(), nodeDB->getNodeNum());
             LOG_DEBUG("[DZHAGA]: Remote node number: %d || %x\n", remoteNodeNumber, remoteNodeNumber);
-            LOG_DEBUG("[DZHAGA]: Current pins state: A=%i, B=%i, C=%i, D=%i\n", digitalRead(moduleConfig.dzhaga.ready_btn_pin), digitalRead(moduleConfig.dzhaga.frbtn_pin_1), digitalRead(moduleConfig.dzhaga.frbtn_pin_2), digitalRead(moduleConfig.dzhaga.frbtn_pin_3));
+            LOG_DEBUG("[DZHAGA]: Current pins state: A=%i, B=%i, C=%i, D=%i\n", digitalRead(moduleConfig.dzhaga.frbtn_pin_0), digitalRead(moduleConfig.dzhaga.frbtn_pin_1), digitalRead(moduleConfig.dzhaga.frbtn_pin_2), digitalRead(moduleConfig.dzhaga.frbtn_pin_3));
 
             return DELAYED_INTERVAL; 
 
@@ -319,7 +319,7 @@ int32_t DzhagaModule::runOnce()
             
             } else if (isNagging[i]) {
                 // If the output is turned on, turn it back off after the given period of time.
-                if (millis() > targetTurnedOn[i] + Default::getConfiguredOrDefaultMs(moduleConfig.dzhaga.minimum_broadcast_secs)) {
+                if (millis() > targetTurnedOn[i] + Default::getConfiguredOrDefaultMs(moduleConfig.dzhaga.frbtn_sig_secs)) {
                     LOG_INFO("[DZHAGA]: Turning %s Target channel %d\n", getTarget(i) ? "OFF" : "ON", i);
                     getTarget(i) ? setExternalOff(i) : setExternalOn(i);
                 }
@@ -564,7 +564,7 @@ bool DzhagaModule::hasDetectionEvent()
     detectedState = {false, false, false, false};
     bool triggeredHigh = moduleConfig.dzhaga.frbtn_triggered_high; // assuming frbtn_triggered_high is the same for all sensors
 
-    bool currentStateA = digitalRead(moduleConfig.dzhaga.ready_btn_pin);
+    bool currentStateA = digitalRead(moduleConfig.dzhaga.frbtn_pin_0);
     bool currentStateB = digitalRead(moduleConfig.dzhaga.frbtn_pin_1);
     bool currentStateC = digitalRead(moduleConfig.dzhaga.frbtn_pin_2);
     bool currentStateD = digitalRead(moduleConfig.dzhaga.frbtn_pin_3);
@@ -670,8 +670,8 @@ void DzhagaModule::setExternalOn(uint8_t index)
 
     switch (index) {
     case 0:
-        if (moduleConfig.dzhaga.ready_btn_pin > 0)
-            digitalWrite(moduleConfig.dzhaga.ready_btn_pin, true);
+        if (moduleConfig.dzhaga.frbtn_pin_0 > 0)
+            digitalWrite(moduleConfig.dzhaga.frbtn_pin_0, true);
         break;
     case 1:
         if (moduleConfig.dzhaga.frbtn_pin_1 > 0)
@@ -702,8 +702,8 @@ void DzhagaModule::setExternalOff(uint8_t index)
 
     switch (index) {
     case 0:
-        if (moduleConfig.dzhaga.ready_btn_pin > 0)
-            digitalWrite(moduleConfig.dzhaga.ready_btn_pin, false);
+        if (moduleConfig.dzhaga.frbtn_pin_0 > 0)
+            digitalWrite(moduleConfig.dzhaga.frbtn_pin_0, false);
         break;
     case 1:
         if (moduleConfig.dzhaga.frbtn_pin_1 > 0)
@@ -758,7 +758,7 @@ ProcessMessage DzhagaModule::handleReceived(const meshtastic_MeshPacket &mp)
                         containsBell = true;
                     }
                 }
-                LOG_DEBUG("[DZHAGA]: Bell character detected: %s\n", containsBell ? "true" : "false");
+                //LOG_DEBUG("[DZHAGA]: Bell character detected: %s\n", containsBell ? "true" : "false");
             
                 std::string messageStr(p.payload.bytes, p.payload.bytes + p.payload.size);
 
@@ -768,7 +768,7 @@ ProcessMessage DzhagaModule::handleReceived(const meshtastic_MeshPacket &mp)
                     // Perform actions when "DETECTED" word is found
                     containsDetected = true;                    
                 }
-                LOG_DEBUG("[DZHAGA]: DETECTED word observed: %s\n", containsDetected ? "true" : "false");
+                //LOG_DEBUG("[DZHAGA]: DETECTED word observed: %s\n", containsDetected ? "true" : "false");
 
                 // Check if the message contains the word "OBSERVED"
                 bool containsObserved = false;
@@ -776,7 +776,7 @@ ProcessMessage DzhagaModule::handleReceived(const meshtastic_MeshPacket &mp)
                     // Perform actions when "OBSERVED" word is found
                     containsObserved = true;                    
                 }
-                LOG_DEBUG("[DZHAGA]: OBSERVED word observed: %s\n", containsObserved ? "true" : "false");
+                //LOG_DEBUG("[DZHAGA]: OBSERVED word observed: %s\n", containsObserved ? "true" : "false");
 
                 // Check if the message contains the word "READYONE"
                 bool containsReadyOne = false;
@@ -784,7 +784,7 @@ ProcessMessage DzhagaModule::handleReceived(const meshtastic_MeshPacket &mp)
                     // Perform actions when "READYONE" word is found
                     containsReadyOne = true;                    
                 }
-                LOG_DEBUG("[DZHAGA]: READYONE word observed: %s\n", containsReadyOne ? "true" : "false");
+                //LOG_DEBUG("[DZHAGA]: READYONE word observed: %s\n", containsReadyOne ? "true" : "false");
 
                 // Find and remove all instances of the ASCII bell character
                 size_t pos;
@@ -825,7 +825,7 @@ ProcessMessage DzhagaModule::handleReceived(const meshtastic_MeshPacket &mp)
                 } 
 
                 if (containsReadyOne) {
-                    LOG_DEBUG("[DZHAGA]: Message contains READYONE\n");
+                    //LOG_DEBUG("[DZHAGA]: Message contains READYONE\n");
                     std::vector<std::string> messageParts;
                     std::istringstream iss(messageStr);
                     std::string part;
@@ -840,18 +840,18 @@ ProcessMessage DzhagaModule::handleReceived(const meshtastic_MeshPacket &mp)
                         if (prefix == "READYONE") {
                             isReadyOne = (state1 == "TRUE");
                         }
-                        LOG_DEBUG("[DZHAGA]: READYONE state: %s\n", state1.c_str());
+                        //LOG_DEBUG("[DZHAGA]: READYONE state: %s\n", state1.c_str());
                         readyOneLastReplyTime = millis();
                     }
 
                 }
 
-                if (moduleConfig.dzhaga.ready_btn_pin > 0 && detectedState[0] && containsDetected) {
+                if (moduleConfig.dzhaga.frbtn_pin_0 > 0 && detectedState[0] && containsDetected) {
                     if (containsBell) {
-                        LOG_INFO("[DZHAGA]: ready_btn_pin - Notification BELL detected\n");
+                        LOG_INFO("[DZHAGA]: frbtn_pin_0 - Notification BELL detected\n");
                         isNagging[0] = true;
                         setExternalOn(0);
-                        nagCycleCutoff[0] = millis() + Default::getConfiguredOrDefaultMs(moduleConfig.dzhaga.minimum_broadcast_secs);
+                        nagCycleCutoff[0] = millis() + Default::getConfiguredOrDefaultMs(moduleConfig.dzhaga.frbtn_sig_secs);
 
                     }
                 }
@@ -861,7 +861,7 @@ ProcessMessage DzhagaModule::handleReceived(const meshtastic_MeshPacket &mp)
                         LOG_INFO("[DZHAGA]: frbtn_pin_1 - Notification BELL detected\n");
                         isNagging[1] = true;
                         setExternalOn(1);
-                        nagCycleCutoff[1] = millis() + Default::getConfiguredOrDefaultMs(moduleConfig.dzhaga.minimum_broadcast_secs);
+                        nagCycleCutoff[1] = millis() + Default::getConfiguredOrDefaultMs(moduleConfig.dzhaga.frbtn_sig_secs);
 
                     }
                 }
@@ -871,7 +871,7 @@ ProcessMessage DzhagaModule::handleReceived(const meshtastic_MeshPacket &mp)
                         LOG_INFO("[DZHAGA]: frbtn_pin_2 - Notification BELL detected\n");
                         isNagging[2] = true;
                         setExternalOn(2);
-                        nagCycleCutoff[2] = millis() + Default::getConfiguredOrDefaultMs(moduleConfig.dzhaga.minimum_broadcast_secs);
+                        nagCycleCutoff[2] = millis() + Default::getConfiguredOrDefaultMs(moduleConfig.dzhaga.frbtn_sig_secs);
 
                     }
                 }
@@ -881,7 +881,7 @@ ProcessMessage DzhagaModule::handleReceived(const meshtastic_MeshPacket &mp)
                         LOG_INFO("[DZHAGA]: frbtn_pin_3 - Notification BELL detected\n");
                         isNagging[3] = true;
                         setExternalOn(3);
-                        nagCycleCutoff[3] = millis() + Default::getConfiguredOrDefaultMs(moduleConfig.dzhaga.minimum_broadcast_secs);
+                        nagCycleCutoff[3] = millis() + Default::getConfiguredOrDefaultMs(moduleConfig.dzhaga.frbtn_sig_secs);
 
                     }
                 }
@@ -906,6 +906,7 @@ ProcessMessage DzhagaModule::handleReceived(const meshtastic_MeshPacket &mp)
             LOG_WARN("[DZHAGA]: Message received but module is disabled\n");
         }
     }
+    // Handling message by REMOTE
     if (moduleConfig.dzhaga.mode == meshtastic_ModuleConfig_DzhagaConfig_Dzhaga_Mode_REMOTE) {
         if (moduleConfig.dzhaga.enabled){
 
