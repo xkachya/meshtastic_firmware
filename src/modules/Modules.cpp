@@ -2,12 +2,15 @@
 #if !MESHTASTIC_EXCLUDE_INPUTBROKER
 #include "input/InputBroker.h"
 #include "input/RotaryEncoderInterruptImpl1.h"
+#include "input/SerialKeyboardImpl.h"
 #include "input/TrackballInterruptImpl1.h"
 #include "input/UpDownInterruptImpl1.h"
 #include "input/cardKbI2cImpl.h"
 #include "input/kbMatrixImpl.h"
 #endif
+#if !MESHTASTIC_EXCLUDE_ADMIN
 #include "modules/AdminModule.h"
+#endif
 #if !MESHTASTIC_EXCLUDE_ATAK
 #include "modules/AtakPluginModule.h"
 #endif
@@ -23,7 +26,9 @@
 #if !MESHTASTIC_EXCLUDE_NEIGHBORINFO
 #include "modules/NeighborInfoModule.h"
 #endif
+#if !MESHTASTIC_EXCLUDE_NODEINFO
 #include "modules/NodeInfoModule.h"
+#endif
 #if !MESHTASTIC_EXCLUDE_GPS
 #include "modules/PositionModule.h"
 #endif
@@ -91,8 +96,12 @@ void setupModules()
 #if (HAS_BUTTON || ARCH_PORTDUINO) && !MESHTASTIC_EXCLUDE_INPUTBROKER
         inputBroker = new InputBroker();
 #endif
+#if !MESHTASTIC_EXCLUDE_ADMIN
         adminModule = new AdminModule();
+#endif
+#if !MESHTASTIC_EXCLUDE_NODEINFO
         nodeInfoModule = new NodeInfoModule();
+#endif
 #if !MESHTASTIC_EXCLUDE_GPS
         positionModule = new PositionModule();
 #endif
@@ -147,6 +156,10 @@ void setupModules()
         kbMatrixImpl = new KbMatrixImpl();
         kbMatrixImpl->init();
 #endif // INPUTBROKER_MATRIX_TYPE
+#ifdef INPUTBROKER_SERIAL_TYPE
+        aSerialKeyboardImpl = new SerialKeyboardImpl();
+        aSerialKeyboardImpl->init();
+#endif // INPUTBROKER_MATRIX_TYPE
 #endif // HAS_BUTTON
 #if ARCH_PORTDUINO
         aLinuxInputImpl = new LinuxInputImpl();
@@ -198,7 +211,9 @@ void setupModules()
 #endif
 #endif
     } else {
+#if !MESHTASTIC_EXCLUDE_ADMIN
         adminModule = new AdminModule();
+#endif
 #if HAS_TELEMETRY
         new DeviceTelemetryModule();
 #endif
